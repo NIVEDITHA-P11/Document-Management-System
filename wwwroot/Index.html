@@ -27,13 +27,12 @@
     </style>
 </head>
 <body>
-    <div id="logoutSection" style="display: none; text-align: right;">
+    <div id="logoutSection" style="display: none; text-align: right;" >
         <button onclick="logoutUser()">Logout</button>
     </div>
 
     <!-- Auth Section Starts -->
     <div id="authSection">
-
 
         <h2 id="form-title">Register</h2>
 
@@ -75,7 +74,6 @@
 
 
     <script>
-        // const baseUrl = "http://localhost:5253/api/Auth";
         const baseUrl = "/api/Auth";
 
         let isLogin = false;
@@ -200,7 +198,7 @@
 
             try {
 
-                const res = await fetch("api/Files/upload", {
+                const res = await fetch("/api/Files/upload", {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -211,6 +209,7 @@
                 if (res.ok) {
                     message.innerText = "✅ File uploaded successfully!";
                     message.className = "success";
+                    fileInput.value = "";  // 🔁 Clear the file input
                 } else {
                     const error = await res.text();
                     message.innerText = `❌ Upload failed: ${error}`;
@@ -224,7 +223,7 @@
 
         async function getDocument() {
             debugger
-            const fileName = document.getElementById("getDocName").value.trim();
+            let fileName = document.getElementById("getDocName").value.trim();
             const revisionInput = document.getElementById("getDocRevision").value.trim();
             const message = document.getElementById("getDocMessage");
 
@@ -244,14 +243,26 @@
             }
 
             try {
-                const res = await fetch(`api/Files/files/${encodeURIComponent(fileName)}${revision}`, {
+                const res = await fetch(`/api/Files/files/${encodeURIComponent(fileName)}${revision}`, {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 });
 
+
                 if (res.ok) {
+
+                    // 👇 Extract filename from Content-Disposition header
+                    const disposition = res.headers.get('Content-Disposition');
+
+                    if (disposition && disposition.indexOf('filename=') !== -1) {
+                        const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match != null && match[1]) {
+                            fileName = match[1].replace(/['"]/g, ''); // remove quotes if any
+                        }
+                    }
+
                     const blob = await res.blob();
                     const downloadUrl = URL.createObjectURL(blob);
                     const a = document.createElement("a");

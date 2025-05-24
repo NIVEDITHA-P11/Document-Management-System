@@ -173,5 +173,4 @@ C:\Users\Srinivasan D\source\repos\DocumentStorageManagement\DocumentStorageMana
 C:\Users\Srinivasan D\source\repos\DocumentStorageManagement\DocumentStorageManagement\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll
 C:\Users\Srinivasan D\source\repos\DocumentStorageManagement\DocumentStorageManagement\bin\Debug\net8.0\Moq.dll
 C:\Users\Srinivasan D\source\repos\DocumentStorageManagement\DocumentStorageManagement\obj\Debug\net8.0\DocumentStorageManagement.sourcelink.json
-C:\Users\Srinivasan D\source\repos\DocumentStorageManagement\DocumentStorageManagement\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\Srinivasan D\source\repos\DocumentStorageManagement\DocumentStorageManagement\bin\Debug\net8.0\DocumentStorageManagement.staticwebassets.runtime.json
