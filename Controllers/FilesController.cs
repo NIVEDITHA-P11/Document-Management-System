@@ -26,6 +26,9 @@ namespace DocumentManagementSystem.Controllers
         [HttpPost("upload")]
         public async Task<IActionResult> Upload([FromForm] FileUploadDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             if (dto.File == null || dto.File.Length == 0)
                 return BadRequest("No file uploaded.");
 
@@ -56,22 +59,50 @@ namespace DocumentManagementSystem.Controllers
 
             return Ok(new { message = "File uploaded", revision });
         }
-
-        [HttpGet("{fileName}")]
-        public async Task<IActionResult> GetLatest(string fileName)
+        
+        [HttpGet("files/{fileName}")]
+        public async Task<IActionResult> GetFile(string fileName, [FromQuery] int? revision)
         {
             var userId = GetUserId();
+            var baseFileName = Path.GetFileNameWithoutExtension(fileName);
 
-            var doc = await _context.Documents
-                .Where(d => d.UserId == userId && d.FileName == fileName)
-                .OrderByDescending(d => d.Revision)
-                .FirstOrDefaultAsync();
+            // Fetch all user's documents with this base name
+            var userDocs = await _context.Documents
+                .Where(d => d.UserId == userId)
+                .ToListAsync();
 
-            if (doc == null)
+            // Match on base name (ignoring extension)
+            var matchingDocs = userDocs
+                .Where(d => Path.GetFileNameWithoutExtension(d.FileName)
+                             .Equals(baseFileName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (!matchingDocs.Any())
                 return NotFound("File not found.");
 
-            return File(doc.Content, "application/octet-stream", fileName);
+            Document doc;
+
+            if (revision.HasValue)
+            {
+                // Get specific revision
+                doc = matchingDocs
+                    .FirstOrDefault(d => d.Revision == revision.Value);
+            }
+            else
+            {
+                // Get latest revision
+                doc = matchingDocs
+                    .OrderByDescending(d => d.Revision)
+                    .FirstOrDefault();
+            }
+
+            if (doc == null)
+                return NotFound($"File with revision {revision} not found.");
+
+            return File(doc.Content, "application/octet-stream", doc.FileName);
         }
+
+
 
         [HttpGet("{fileName}/revision/{rev}")]
         public async Task<IActionResult> GetRevision(string fileName, int rev)

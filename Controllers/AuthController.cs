@@ -33,9 +33,9 @@ namespace DocumentManagementSystem.Controllers
     public IActionResult Register([FromBody] RegisterDto dto)
     {
         if (_context.Users.Any(u => u.Username == dto.Username))
-            return BadRequest("Username already exists");
+                return BadRequest(new { message = "Username already exists" });
 
-        var user = new User
+            var user = new User
         {
             Username = dto.Username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
@@ -43,8 +43,7 @@ namespace DocumentManagementSystem.Controllers
 
         _context.Users.Add(user);
         _context.SaveChanges();
-
-        return Ok("User registered successfully");
+        return BadRequest(new { message = "User registered successfully" });
     }
 
     [HttpPost("login")]

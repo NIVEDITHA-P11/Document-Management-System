@@ -44,16 +44,24 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 var jwtSettingsSection = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtSettings>(jwtSettingsSection);
 
 var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
 var key = Encoding.ASCII.GetBytes(jwtSettings.Key);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -74,7 +82,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -84,12 +91,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Add these two lines to serve static files and default files like index.html
+app.UseDefaultFiles();   // <-- Add here
+app.UseStaticFiles();    // <-- Add here
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
 app.UseAuthorization();
 
+app.UseCors("AllowAll");
+
 app.MapControllers();
+
+// Optional: fallback route for SPA (serves index.html on unmatched routes)
+app.MapFallbackToFile("index.html");
 
 app.Run();
