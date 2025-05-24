@@ -27,6 +27,10 @@
     </style>
 </head>
 <body>
+    <div id="logoutSection" style="display: none; text-align: right;">
+        <button onclick="logoutUser()">Logout</button>
+    </div>
+
     <!-- Auth Section Starts -->
     <div id="authSection">
 
@@ -57,213 +61,230 @@
     <!-- Upload file Section Ends -->
     <!-- Get file Section Satrts -->
 
-    <div id="DownloadDocSection" >
+    <div id="DownloadDocSection">
         <hr />
         <h3>Download previously uploaded documents</h3>
         <input type="text" id="getDocName" placeholder="Enter file name" />
         <input type="number" id="getDocRevision" placeholder="Enter revision number" />
         <button onclick="getDocument()">Download Document</button>
         <p id="getDocMessage"></p>
-   </div>
-        <!-- Get file Section Ends -->
+    </div>
+    <!-- Get file Section Ends -->
 
 
 
 
-        <script>
-           // const baseUrl = "http://localhost:5253/api/Auth";
-            const baseUrl = "/api/Auth";
+    <script>
+        // const baseUrl = "http://localhost:5253/api/Auth";
+        const baseUrl = "/api/Auth";
 
-            let isLogin = false;
+        let isLogin = false;
 
-            // Bind the click event AFTER the DOM loads
-            document.addEventListener("DOMContentLoaded", () => {
-                const token = sessionStorage.getItem("token");
+        // Bind the click event AFTER the DOM loads
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = sessionStorage.getItem("token");
 
-                if (token) {
-                    document.getElementById("authSection").style.display = "none";
-                    document.getElementById("uploadSection").style.display = "block";
-                    document.getElementById("DownloadDocSection").style.display = "block";
+            if (token) {
+                document.getElementById("authSection").style.display = "none";
+                document.getElementById("uploadSection").style.display = "block";
+                document.getElementById("DownloadDocSection").style.display = "block";
+                document.getElementById("logoutSection").style.display = "block";
+            } else {
+                document.getElementById("authSection").style.display = "block";
+                document.getElementById("uploadSection").style.display = "none";
+                document.getElementById("DownloadDocSection").style.display = "none";
+                document.getElementById("logoutSection").style.display = "none";
+            }
+
+            document.getElementById("action-button").addEventListener("click", handleAuth);
+            document.getElementById("toggle-link").addEventListener("click", toggleForm);
+        });
+
+
+
+
+
+        function toggleForm(event) {
+            event.preventDefault();
+            isLogin = !isLogin;
+
+            document.getElementById("form-title").innerText = isLogin ? "Login" : "Register";
+            document.getElementById("action-button").innerText = isLogin ? "Login" : "Register";
+            document.getElementById("toggle-link").innerText = isLogin
+                ? "New user? Register here"
+                : "Already registered? Login here";
+
+            document.getElementById("message").innerText = "";
+        }
+
+        async function handleAuth() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const message = document.getElementById("message");
+
+            if (!username || !password) {
+                message.innerText = "Please enter username and password.";
+                message.className = "error";
+                return;
+            }
+
+            const user = { username, password };
+            const endpoint = isLogin ? "login" : "register";
+
+            try {
+                const res = await fetch(`${baseUrl}/${endpoint}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(user)
+                });
+
+                //const data = await res.json();
+
+
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    document.getElementById("message").innerText = data.message; // shows "Username already exists"
+                    document.getElementById("message").className = "error";
+                }
+
+
+
+                if (res.ok) {
+                    if (isLogin) {
+                        sessionStorage.setItem("token", data.token);
+
+                        message.innerText = "✅ Logged in successfully!";
+                        message.className = "success";
+
+                        // Hide login/register and show upload section
+                        document.getElementById("authSection").style.display = "none";
+                        document.getElementById("uploadSection").style.display = "block";
+                        document.getElementById("DownloadDocSection").style.display = "block";
+                        document.getElementById("logoutSection").style.display = "block";
+                    } else {
+                        message.innerText = "✅ Registered! Please login.";
+                        message.className = "success";
+                        toggleForm(new Event("click"));
+                    }
                 } else {
-                    document.getElementById("authSection").style.display = "block";
-                    document.getElementById("uploadSection").style.display = "none";
-                    document.getElementById("DownloadDocSection").style.display = "none";
+                    message.innerText = data.message || "❌ Something went wrong.";
+                    message.className = "error";
                 }
+            } catch (err) {
+                message.innerText = "❌ Network or server error.";
+                message.className = "error";
+            }
+        }
 
-                document.getElementById("action-button").addEventListener("click", handleAuth);
-                document.getElementById("toggle-link").addEventListener("click", toggleForm);
-            });
+        async function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            const message = document.getElementById("uploadMessage");
 
-
-
-
-            function toggleForm(event) {
-                event.preventDefault();
-                isLogin = !isLogin;
-
-                document.getElementById("form-title").innerText = isLogin ? "Login" : "Register";
-                document.getElementById("action-button").innerText = isLogin ? "Login" : "Register";
-                document.getElementById("toggle-link").innerText = isLogin
-                    ? "New user? Register here"
-                    : "Already registered? Login here";
-
-                document.getElementById("message").innerText = "";
+            if (!fileInput.files.length) {
+                message.innerText = "Please select a file to upload.";
+                message.className = "error";
+                return;
             }
 
-            async function handleAuth() {
-                const username = document.getElementById("username").value.trim();
-                const password = document.getElementById("password").value.trim();
-                const message = document.getElementById("message");
-
-                if (!username || !password) {
-                    message.innerText = "Please enter username and password.";
-                    message.className = "error";
-                    return;
-                }
-
-                const user = { username, password };
-                const endpoint = isLogin ? "login" : "register";
-
-                try {
-                    const res = await fetch(`${baseUrl}/${endpoint}`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(user)
-                    });
-
-                    //const data = await res.json();
-
-
-
-                    const data = await res.json();
-
-                    if (!res.ok) {
-                        document.getElementById("message").innerText = data.message; // shows "Username already exists"
-                        document.getElementById("message").className = "error";
-                    }
-
-
-
-                    if (res.ok) {
-                        if (isLogin) {
-                            sessionStorage.setItem("token", data.token);
-
-                            message.innerText = "✅ Logged in successfully!";
-                            message.className = "success";
-
-                            // Hide login/register and show upload section
-                            document.getElementById("authSection").style.display = "none";
-                            document.getElementById("uploadSection").style.display = "block";
-                            document.getElementById("DownloadDocSection").style.display = "block";
-                        } else {
-                            message.innerText = "✅ Registered! Please login.";
-                            message.className = "success";
-                            toggleForm(new Event("click"));
-                        }
-                    } else {
-                        message.innerText = data.message || "❌ Something went wrong.";
-                        message.className = "error";
-                    }
-                } catch (err) {
-                    message.innerText = "❌ Network or server error.";
-                    message.className = "error";
-                }
+            const token = sessionStorage.getItem("token");
+            if (!token) {
+                message.innerText = "You must log in first.";
+                message.className = "error";
+                return;
             }
 
-            async function uploadFile() {
-                const fileInput = document.getElementById("fileInput");
-                const message = document.getElementById("uploadMessage");
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
 
-                if (!fileInput.files.length) {
-                    message.innerText = "Please select a file to upload.";
-                    message.className = "error";
-                    return;
-                }
+            try {
 
-                const token = sessionStorage.getItem("token");
-                if (!token) {
-                    message.innerText = "You must log in first.";
-                    message.className = "error";
-                    return;
-                }
+                const res = await fetch("api/Files/upload", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: formData
+                });
 
-                const formData = new FormData();
-                formData.append("file", fileInput.files[0]);
-
-                try {
-                   
-                    const res = await fetch("api/Files/upload", {
-                        method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        },
-                        body: formData
-                    });
-
-                    if (res.ok) {
-                        message.innerText = "✅ File uploaded successfully!";
-                        message.className = "success";
-                    } else {
-                        const error = await res.text();
-                        message.innerText = `❌ Upload failed: ${error}`;
-                        message.className = "error";
-                    }
-                } catch (err) {
-                    message.innerText = "❌ Error connecting to the server.";
+                if (res.ok) {
+                    message.innerText = "✅ File uploaded successfully!";
+                    message.className = "success";
+                } else {
+                    const error = await res.text();
+                    message.innerText = `❌ Upload failed: ${error}`;
                     message.className = "error";
                 }
+            } catch (err) {
+                message.innerText = "❌ Error connecting to the server.";
+                message.className = "error";
+            }
+        }
+
+        async function getDocument() {
+            debugger
+            const fileName = document.getElementById("getDocName").value.trim();
+            const revisionInput = document.getElementById("getDocRevision").value.trim();
+            const message = document.getElementById("getDocMessage");
+
+            if (!fileName) {
+                message.innerText = "Please enter the file name.";
+                message.className = "error";
+                return;
             }
 
-            async function getDocument() {
-                debugger
-                const fileName = document.getElementById("getDocName").value.trim();
-                const revisionInput = document.getElementById("getDocRevision").value.trim();
-                const message = document.getElementById("getDocMessage");
+            const revision = revisionInput ? `?revision=${revisionInput}` : "";
+            const token = sessionStorage.getItem("token");
 
-                if (!fileName) {
-                    message.innerText = "Please enter the file name.";
-                    message.className = "error";
-                    return;
-                }
-
-                const revision = revisionInput ? `?revision=${revisionInput}` : "";
-                const token = sessionStorage.getItem("token");
-
-                if (!token) {
-                    message.innerText = "You must log in first.";
-                    message.className = "error";
-                    return;
-                }
-
-                try {
-                    const res = await fetch(`api/Files/files/${encodeURIComponent(fileName)}${revision}`, {
-                        method: "GET",
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
-
-                    if (res.ok) {
-                        const blob = await res.blob();
-                        const downloadUrl = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = downloadUrl;
-                        a.download = fileName;
-                        a.click();
-
-                        message.innerText = "✅ File downloaded.";
-                        message.className = "success";
-                    } else {
-                        const error = await res.text();
-                        message.innerText = `❌ ${error}`;
-                        message.className = "error";
-                    }
-                } catch (err) {
-                    message.innerText = "❌ Something went wrong.";
-                    message.className = "error";
-                }
+            if (!token) {
+                message.innerText = "You must log in first.";
+                message.className = "error";
+                return;
             }
 
-        </script>
+            try {
+                const res = await fetch(`api/Files/files/${encodeURIComponent(fileName)}${revision}`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = downloadUrl;
+                    a.download = fileName;
+                    a.click();
+
+                    message.innerText = "✅ File downloaded.";
+                    message.className = "success";
+                } else {
+                    const error = await res.text();
+                    message.innerText = `❌ ${error}`;
+                    message.className = "error";
+                }
+            } catch (err) {
+                message.innerText = "❌ Something went wrong.";
+                message.className = "error";
+            }
+        }
+        function logoutUser() {
+            sessionStorage.removeItem("token");
+
+            // Hide protected sections and show auth form
+            document.getElementById("authSection").style.display = "block";
+            document.getElementById("uploadSection").style.display = "none";
+            document.getElementById("DownloadDocSection").style.display = "none";
+            document.getElementById("logoutSection").style.display = "none";
+
+            // Clear any leftover messages
+            document.getElementById("uploadMessage").innerText = "";
+            document.getElementById("getDocMessage").innerText = "";
+        }
+
+    </script>
 </body>
 </html>
